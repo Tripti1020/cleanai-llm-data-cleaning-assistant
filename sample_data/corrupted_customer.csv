@@ -1,0 +1,5 @@
+Customer_ID,Customer_Name,Age,Gender
+1001,John,25,Male
+1002,Alice,30,Female
+1003,Bob,28,Male,EXTRA_COLUMN
+1004,Eva,26,Female
