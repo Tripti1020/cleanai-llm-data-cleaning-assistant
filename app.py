@@ -1,42 +1,141 @@
 import streamlit as st
+import pandas as pd
 
-# Page configuration
+from src.data_loader import load_csv, get_file_info
+
+# --------------------------
+# PAGE CONFIGURATION
+# --------------------------
+
 st.set_page_config(
     page_title="CleanAI",
     page_icon="🧹",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Sidebar
+# --------------------------
+# SESSION STATE
+# --------------------------
+
+if "df" not in st.session_state:
+    st.session_state.df = None
+
+# --------------------------
+# SIDEBAR
+# --------------------------
+
 with st.sidebar:
+
     st.title("🧹 CleanAI")
     st.caption("LLM-Powered Data Cleaning Assistant")
+
     st.markdown("---")
-    st.write("**Module Progress**")
+
+    st.write("## Development Progress")
+
+    st.progress(2/6)
+
+    st.caption("Module 2 of 6 Completed")
+
     st.write("✅ Project Setup")
-    st.write("⬜ Data Upload")
+    st.write("✅ Data Loader")
     st.write("⬜ Data Profiling")
+    st.write("⬜ Issue Detection")
     st.write("⬜ AI Recommendations")
-    st.write("⬜ Data Cleaning")
 
-# Main page
+# --------------------------
+# MAIN PAGE
+# --------------------------
+
 st.title("🧹 CleanAI")
-st.subheader("LLM-Powered Data Cleaning Assistant")
 
-st.markdown(
-    """
-    Welcome to **CleanAI**, an intelligent data quality assistant that combines
-    **Pandas** with **LLM-powered recommendations** to clean messy CSV datasets.
+st.subheader("Upload a Messy CSV Dataset")
 
-    ### What this app will eventually do:
-    - 📁 Upload messy CSV files
-    - 🔍 Detect data quality issues
-    - 🤖 Generate AI cleaning recommendations
-    - 🧹 Execute safe cleaning operations
-    - 📊 Compare before vs after results
-    - 📄 Export cleaned data and reports
-    """
+uploaded_file = st.file_uploader(
+    "Drag & Drop or Browse",
+    type=["csv"]
 )
 
-st.info("🚀 Module 1 completed: The project foundation is ready.")
+# --------------------------
+# FILE PROCESSING
+# --------------------------
+
+if uploaded_file:
+
+    df, error = load_csv(uploaded_file)
+
+    if error:
+
+        st.error(error)
+
+    else:
+
+        st.session_state.df = df
+
+        info = get_file_info(uploaded_file, df)
+
+        st.success("Dataset loaded successfully!")
+
+        # --------------------------
+        # FILE METRICS
+        # --------------------------
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric("Rows", f"{info['rows']:,}")
+        col2.metric("Columns", info["columns"])
+        col3.metric("File Size", f"{info['size_mb']} MB")
+        col4.metric("Memory", f"{info['memory_mb']} MB")
+
+        # --------------------------
+        # QUICK HEALTH
+        # --------------------------
+
+        st.divider()
+
+        st.write("## Quick Dataset Health")
+
+        duplicates = df.duplicated().sum()
+        missing = df.isnull().sum().sum()
+        numeric_cols = len(df.select_dtypes(include="number").columns)
+        text_cols = len(df.select_dtypes(include="object").columns)
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        c1.metric("Missing Cells", missing)
+        c2.metric("Duplicate Rows", duplicates)
+        c3.metric("Numeric Columns", numeric_cols)
+        c4.metric("Text Columns", text_cols)
+
+        # --------------------------
+        # COLUMN INFO TABLE
+        # --------------------------
+
+        column_info = pd.DataFrame({
+            "Column": df.columns,
+            "Data Type": df.dtypes.astype(str).values,
+            "Missing Values": df.isnull().sum().values,
+            "Unique Values": df.nunique().values
+        })
+
+        # --------------------------
+        # EXPANDABLE SECTIONS
+        # --------------------------
+
+        with st.expander("📄 Dataset Preview", expanded=True):
+            st.dataframe(df.head(20), use_container_width=True)
+
+        with st.expander("📋 Column Information"):
+            st.dataframe(column_info, use_container_width=True)
+
+        with st.expander("🔢 Missing Values Summary"):
+
+            missing_df = pd.DataFrame({
+                "Column": df.columns,
+                "Missing": df.isnull().sum().values,
+                "Percentage": (
+                    df.isnull().sum()/len(df)*100
+                ).round(2).values
+            })
+
+            st.dataframe(missing_df, use_container_width=True)

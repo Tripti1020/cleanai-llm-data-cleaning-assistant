@@ -1,0 +1,11 @@
+Customer_ID,Customer_Name,Age,Gender,Email,Country,Purchase_Amount,Purchase_Date
+1001,John Smith,25,Male,john@gmail.com,USA,$120,2024-01-10
+1002, JOHN SMITH ,25 years,male,john@gmail.com,USA,120,10/01/2024
+1003,Alice,-5,Female,alicegmail.com,India,"₹2,000",2024/02/15
+1004,,twenty,F,alice@gmail.com,India,,15-02-2024
+1005,Bob,35,MALE,bob@yahoo.com,U.S.A,$500,2024-03-01
+1005,Bob,35,M,bob@yahoo.com,United States,500,2024-03-01
+1006,Charlie,42,Female,charlie@mail,UK,$800,March 5 2024
+1007,David,29,Male,david@gmail.com,United Kingdom,1000,2024-03-08
+1008,Eva,,female,eva@gmail.com,India,$300,
+1009, Mike ,31,M,mike@gmail.com,India,300,2024-04-01
