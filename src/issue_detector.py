@@ -67,14 +67,20 @@ def detect_whitespace(df):
     return issues
 def detect_negative_values(df):
     """
-    Detect unexpected negative numbers.
+    Detect negative numbers even inside text columns.
     """
 
     issues = []
 
-    for column in df.select_dtypes(include="number"):
+    for column in df.columns:
 
-        negatives = (df[column] < 0).sum()
+        values = df[column].dropna().astype(str)
+
+        extracted = values.str.extract(r"(-?\d+)")[0]
+
+        numbers = pd.to_numeric(extracted, errors="coerce")
+
+        negatives = (numbers < 0).sum()
 
         if negatives > 0:
 
@@ -169,7 +175,10 @@ def detect_date_formats(df):
     return issues
 def detect_inconsistent_categories(df):
     """
-    Detect inconsistent capitalization.
+    Detect inconsistent categorical values such as:
+    - Male / male / M
+    - USA / U.S.A / United States
+    - UK / United Kingdom
     """
 
     issues = []
@@ -178,21 +187,60 @@ def detect_inconsistent_categories(df):
 
         values = df[column].dropna().astype(str)
 
-        lowered = values.str.lower()
+        if values.empty:
+            continue
 
-        if lowered.nunique() < values.nunique():
+        # Normalize values before comparison
+        normalized = (
+            values
+            .str.lower()
+            .str.replace(".", "", regex=False)
+            .str.replace("-", " ", regex=False)
+            .str.replace("_", " ", regex=False)
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+        )
+
+        if normalized.nunique() < values.nunique():
 
             issues.append({
-
                 "Column": column,
-
                 "Issue": "Inconsistent Categories",
-
                 "Count": values.nunique(),
-
-                "Severity": "Low"
-
+                "Severity": "Medium"
             })
+
+    return issues
+def detect_invalid_numeric_format(df):
+    """
+    Detect values like '25years' or 'twenty'.
+    """
+
+    issues = []
+
+    for column in df.columns:
+
+        if "age" in column.lower():
+
+            values = df[column].dropna().astype(str)
+
+            invalid = values[
+                values.str.contains(r"[A-Za-z]")
+            ]
+
+            if len(invalid):
+
+                issues.append({
+
+                    "Column": column,
+
+                    "Issue": "Invalid Numeric Format",
+
+                    "Count": len(invalid),
+
+                    "Severity": "Medium"
+
+                })
 
     return issues
 def detect_all_issues(df):
@@ -208,5 +256,6 @@ def detect_all_issues(df):
     issues.extend(detect_currency_formats(df))
     issues.extend(detect_date_formats(df))
     issues.extend(detect_inconsistent_categories(df))
+    issues.extend(detect_invalid_numeric_format(df))
 
     return pd.DataFrame(issues)
